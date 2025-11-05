@@ -48,7 +48,13 @@ class BaseGameModel:
         with scores_file:
             reader = csv.reader(scores_file)
             for row in reader:
-                scores.append(float(row[-1]))
+                if row and row[-1]:  # Skip empty rows
+                    try:
+                        scores.append(float(row[-1]))
+                    except (ValueError, IndexError):
+                        continue  # Skip invalid rows
+        if not scores:
+            return "(?, ?, ?)"
         minimum = min(scores)
         average = round(sum(scores)/float(len(scores)), 1)
         maximum = max(scores)
@@ -64,8 +70,12 @@ class BaseGameModel:
             reader = csv.reader(scores)
             data = list(reader)
             for i in range(0, len(data)):
-                x.append(float(i))
-                y.append(float(data[i][0]))
+                if data[i] and data[i][0]:  # Skip empty rows
+                    try:
+                        x.append(float(len(x)))  # Use actual index of valid data
+                        y.append(float(data[i][0]))
+                    except (ValueError, IndexError):
+                        continue
 
         plt.subplots()
         plt.plot(x, y, label="score per run")
