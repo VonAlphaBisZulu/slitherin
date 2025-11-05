@@ -4,5 +4,5 @@ tensorflow>=2.13.0  # Includes Keras
 pygame>=2.5.0
 matplotlib>=3.7.0
 
-# MILP solver support (for future MILP agent)
-# PySCIPOpt>=5.0.0  # Uncomment when implementing MILP solver
+# MILP solver support (Phase 2)
+PySCIPOpt>=5.0.0  # SCIP optimization solver for MILP snake agent
