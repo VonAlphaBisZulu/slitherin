@@ -28,19 +28,21 @@ class MILPAISolver(BaseGameModel):
     the snake never traps itself while optimizing for apple collection.
     """
 
-    def __init__(self, horizon=10, timeout=0.5, use_fallback=True):
+    def __init__(self, horizon=10, timeout=60.0, max_retries=10, use_fallback=True):
         """
-        Initialize MILP solver.
+        Initialize MILP solver with Hamiltonian cycle strategy.
 
         Args:
-            horizon: int - planning horizon (number of moves ahead)
-            timeout: float - SCIP solver timeout in seconds (default: 0.5s)
-            use_fallback: bool - use BFS fallback if MILP fails
+            horizon: int - IGNORED (visits all cells for Hamiltonian cycle)
+            timeout: float - SCIP solver timeout in seconds (default: 60s for Hamiltonian)
+            max_retries: int - number of retry attempts before fallback (default: 10)
+            use_fallback: bool - use BFS fallback if MILP fails after all retries
         """
-        BaseGameModel.__init__(self, "MILP (SCIP)", "milp", "milp")
+        BaseGameModel.__init__(self, "MILP Hamiltonian", "milp_hamilton", "milph")
 
-        self.horizon = horizon
+        self.horizon = horizon  # Not used in Hamiltonian mode, kept for compatibility
         self.timeout = timeout
+        self.max_retries = max_retries
         self.use_fallback = use_fallback
 
         # Will be initialized on first move
@@ -168,40 +170,55 @@ class MILPAISolver(BaseGameModel):
 
     def _solve_milp_for_path(self, head_pos, body_positions, apple_pos, environment):
         """
-        Solve MILP model and return full path.
+        Solve MILP model with retry logic.
+
+        Attempts to solve Hamiltonian cycle MILP up to max_retries times.
+        If all attempts fail, returns cached path (safe fallback).
 
         Returns:
-            list[Point]: Path from head to apple, or empty list if failed
+            list[Point]: Complete Hamiltonian cycle path, or empty list if all retries failed
         """
-        try:
-            # Build MILP model
-            model, solution_vars = self.model_builder.build(
-                head_pos=head_pos,
-                body_positions=body_positions,
-                apple_pos=apple_pos,
-                horizon=self.horizon,
-                timeout=self.timeout
-            )
+        for attempt in range(self.max_retries):
+            try:
+                # Build MILP model for Hamiltonian cycle
+                model, solution_vars = self.model_builder.build(
+                    head_pos=head_pos,
+                    body_positions=body_positions,
+                    apple_pos=apple_pos,
+                    horizon=self.horizon,  # Ignored in Hamiltonian mode
+                    timeout=self.timeout
+                )
 
-            # Solve
-            model.optimize()
+                # Solve
+                model.optimize()
 
-            # Check if solution found
-            status = model.getStatus()
-            if status not in ["optimal", "bestsollimit"]:
-                return []
+                # Check if solution found
+                status = model.getStatus()
+                if status not in ["optimal", "bestsollimit"]:
+                    print(f"MILP attempt {attempt+1}/{self.max_retries}: No solution (status={status})")
+                    continue
 
-            # Extract path
-            path = self.model_builder.extract_path(model, solution_vars)
+                # Extract path
+                path = self.model_builder.extract_path(model, solution_vars)
 
-            return path if path else []
+                if path and len(path) >= 2:
+                    print(f"MILP attempt {attempt+1}/{self.max_retries}: SUCCESS (path length={len(path)})")
+                    return path
+                else:
+                    print(f"MILP attempt {attempt+1}/{self.max_retries}: Empty path extracted")
+                    continue
 
-        except Exception as e:
-            # MILP failed (timeout, infeasible, etc.)
-            import traceback
-            print(f"MILP solver exception: {type(e).__name__}: {e}")
-            traceback.print_exc()
-            return []
+            except Exception as e:
+                # MILP failed (timeout, infeasible, solver error, etc.)
+                import traceback
+                print(f"MILP attempt {attempt+1}/{self.max_retries}: EXCEPTION {type(e).__name__}: {e}")
+                if attempt == self.max_retries - 1:  # Last attempt, print full traceback
+                    traceback.print_exc()
+                continue
+
+        # All retries failed - return cached path as fallback
+        print(f"MILP: All {self.max_retries} attempts failed. Falling back to cached path.")
+        return self.current_path if self.current_path else []
 
     def _fallback_move(self, environment):
         """
@@ -289,13 +306,13 @@ class MILPBenchmark(BaseGameModel):
     multiple games to collect performance statistics.
     """
 
-    def __init__(self, horizon=10, timeout=0.5, num_games=100):
-        BaseGameModel.__init__(self, "MILP Benchmark", "milp_benchmark", "milpb")
+    def __init__(self, horizon=10, timeout=60.0, num_games=100):
+        BaseGameModel.__init__(self, "MILP Hamiltonian Benchmark", "milp_hamilton_bench", "milphb")
         self.solver = MILPAISolver(horizon=horizon, timeout=timeout)
         self.num_games = num_games
 
         # Track steps per apple for analysis
-        self.steps_per_apple = []  # List of (score, steps) tuples
+        self.steps_per_apple = []  # List of (apple_number, steps_to_reach) tuples
 
     def move(self, environment):
         """
