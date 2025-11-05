@@ -140,7 +140,7 @@ class Environment:
                     if tile == Tile.empty and p.point == Point(x, y):
                         tile = Action.description(p.action)
                 environment_string += " " + tile + " "
-        print environment_string
+        print(environment_string)
 
     def print_to_console(self):
         environment_string = ""
@@ -148,7 +148,7 @@ class Environment:
             environment_string += "\n"
             for x in range(0, self.width):
                 environment_string += " " + self.tiles[y][x] + " "
-        print environment_string
+        print(environment_string)
 
     def _frame(self):
         grayscale = [[Tile.grayscale(tile) for tile in row] for row in self.tiles]

@@ -39,9 +39,9 @@ class DNNTrainer(BaseDNNGameModel):
 
     def move(self, environment):
         BaseDNNGameModel.move(self, environment)
-        print ""
-        print self.long_name + ": train and test"
-        print ""
+        print("")
+        print(self.long_name + ": train and test")
+        print("")
         while True:
             self._train(100)
             self._test(100)
@@ -80,11 +80,11 @@ class DNNTrainer(BaseDNNGameModel):
                     bad_moves += 1
             moves_per_run.append(environment.reward())
         mean_score = mean(moves_per_run)
-        print "Mean score: " + str(mean_score)
-        print "Eat fruit moves: " + str(eat_fruit_moves)
-        print "Good moves: " + str(good_moves)
-        print "Bad moves: " + str(bad_moves)
-        print "Death moves: " + str(death_moves)
+        print("Mean score: " + str(mean_score))
+        print("Eat fruit moves: " + str(eat_fruit_moves))
+        print("Good moves: " + str(good_moves))
+        print("Bad moves: " + str(bad_moves))
+        print("Death moves: " + str(death_moves))
 
     def _training_observations(self, training_runs):
         new_environment = self.prepare_training_environment(10, 10)

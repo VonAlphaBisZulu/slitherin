@@ -27,8 +27,8 @@ class Game:
         self.navigation_bar_height = navigation_bar_height
         self.screen = pygame.display.set_mode((screen_width, screen_height), 0, Constants.SCREEN_DEPTH)
         self.surface = pygame.Surface(self.screen.get_size())
-        self.horizontal_pixels = screen_width / pixel_size
-        self.vertical_pixels = (screen_height-navigation_bar_height) / pixel_size
+        self.horizontal_pixels = int(screen_width / pixel_size)
+        self.vertical_pixels = int((screen_height-navigation_bar_height) / pixel_size)
 
         self.environment = Environment(width=self.horizontal_pixels,
                                        height=self.vertical_pixels)
@@ -67,20 +67,20 @@ class Game:
         self.surface.fill(Color.white)
         for game_object in self.screen_objects:
             game_object.draw(self.surface)
-        for x in range(0, (self.horizontal_pixels*self.pixel_size)+1):
+        for x in range(0, int(self.horizontal_pixels*self.pixel_size)+1):
             self.draw_pixel(self.surface, Color.gray, Point(x, 0))
-            for y in range(0, (self.navigation_bar_height-self.pixel_size)+1):
+            for y in range(0, int(self.navigation_bar_height-self.pixel_size)+1):
                 self.draw_pixel(self.surface, Color.gray, Point(x, y))
 
         font = pygame.font.SysFont(Constants.FONT, int(self.navigation_bar_height / 1.3))
         score_text = font.render(str(self.environment.reward()), 1, Color.green)
         score_text_rect = score_text.get_rect()
-        score_text_rect.center = (self.navigation_bar_height/2, self.navigation_bar_height/2)
+        score_text_rect.center = (int(self.navigation_bar_height/2), int(self.navigation_bar_height/2))
         self.surface.blit(score_text, score_text_rect)
 
         solver_text = font.render(self.model.long_name + " " + self.stats, 1, Color.black)
         solver_text_rect = solver_text.get_rect()
-        solver_text_rect.center = (self.screen.get_rect().width/2, self.navigation_bar_height/2)
+        solver_text_rect.center = (int(self.screen.get_rect().width/2), int(self.navigation_bar_height/2))
         self.surface.blit(solver_text, solver_text_rect)
         self.screen.blit(self.surface, (0, 0))
 

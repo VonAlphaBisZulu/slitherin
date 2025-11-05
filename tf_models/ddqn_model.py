@@ -1,6 +1,6 @@
-from keras.optimizers import RMSprop
-from keras.models import Sequential
-from keras.layers import Conv2D, Flatten, Dense
+from tensorflow.keras.optimizers import RMSprop
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, Flatten, Dense
 
 
 class DDQNModel:

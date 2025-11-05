@@ -89,7 +89,7 @@ class DDQNTrainer(BaseDDQNGameModel):
         scores = []
         while True:
             if total_run_limit is not None and run >= total_run_limit:
-                print "Reached total run limit of: " + str(total_run_limit)
+                print("Reached total run limit of: " + str(total_run_limit))
                 exit(0)
 
             run += 1
@@ -99,7 +99,7 @@ class DDQNTrainer(BaseDDQNGameModel):
             score = env.reward()
             while True:
                 if total_step >= total_step_limit:
-                    print "Reached total step limit of: " + str(total_step_limit)
+                    print("Reached total step limit of: " + str(total_step_limit))
                     exit(0)
                 total_step += 1
                 step += 1
@@ -120,8 +120,8 @@ class DDQNTrainer(BaseDDQNGameModel):
                     scores.append(score)
                     if len(scores) % SCORE_LOGGING_FREQUENCY == 0:
                         self.log_score(mean(scores))
-                        print('{{"metric": "score", "value": {}}}'.format(mean(scores)))
-                        print('{{"metric": "run", "value": {}}}'.format(run))
+                        print(('{{"metric": "score", "value": {}}}'.format(mean(scores))))
+                        print(('{{"metric": "run", "value": {}}}'.format(run)))
                         scores = []
                     break
 
@@ -148,15 +148,15 @@ class DDQNTrainer(BaseDDQNGameModel):
             loss, accuracy, average_max_q = self._train()
             if total_step % LEARNING_LOGGING_FREQUENCY == 0:
                 #TODO: batch and average these values
-                print('{{"metric": "loss", "value": {}}}'.format(loss))
-                print('{{"metric": "accuracy", "value": {}}}'.format(accuracy))
-                print('{{"metric": "q", "value": {}}}'.format(average_max_q))
+                print(('{{"metric": "loss", "value": {}}}'.format(loss)))
+                print(('{{"metric": "accuracy", "value": {}}}'.format(accuracy)))
+                print(('{{"metric": "q", "value": {}}}'.format(average_max_q)))
 
         self._update_epsilon()
 
         if total_step % MODEL_PERSISTENCE_UPDATE_FREQUENCY == 0:
-            print('{{"metric": "epsilon", "value": {}}}'.format(self.epsilon))
-            print('{{"metric": "total_step", "value": {}}}'.format(total_step))
+            print(('{{"metric": "epsilon", "value": {}}}'.format(self.epsilon)))
+            print(('{{"metric": "total_step", "value": {}}}'.format(total_step)))
             self._save_model()
 
         if total_step % TARGET_NETWORK_UPDATE_FREQUENCY == 0:

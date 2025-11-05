@@ -49,7 +49,6 @@ class BaseGameModel:
             reader = csv.reader(scores_file)
             for row in reader:
                 scores.append(float(row[-1]))
-        scores = list(map(lambda x: x, scores))
         minimum = min(scores)
         average = round(sum(scores)/float(len(scores)), 1)
         maximum = max(scores)
@@ -144,4 +143,4 @@ class BaseGameModel:
             average_score_for_action = sum(scores_for_actions[action]) / float(len(scores_for_actions[action]))
             average_scores_for_actions[action] = average_score_for_action
         sorted_average_scores_for_actions = OrderedDict(sorted(average_scores_for_actions.items(), key=lambda t: t[1]))
-        return sorted_average_scores_for_actions.keys()[-1]
+        return list(sorted_average_scores_for_actions.keys())[-1]
