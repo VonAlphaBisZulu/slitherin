@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slitherin - AI Snake Game</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🐍 Slitherin</h1>
+            <p class="subtitle">Watch AI agents master the classic Snake game</p>
+        </header>
+
+        <div class="main-content">
+            <div class="game-panel">
+                <canvas id="gameCanvas" width="600" height="640"></canvas>
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="solverSelect">AI Solver:</label>
+                        <select id="solverSelect">
+                            <option value="human">Human (Arrow Keys)</option>
+                            <option value="bfs">BFS (Shortest Path)</option>
+                            <option value="dfs">DFS (Shortest Path)</option>
+                            <option value="longest">Longest Path</option>
+                            <option value="hamilton" selected>Hamilton Cycle</option>
+                            <option value="milp">MILP (Mixed Integer Linear Programming)</option>
+                            <option value="random">Random</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="speedSelect">Speed:</label>
+                        <select id="speedSelect">
+                            <option value="50">Slow (50ms)</option>
+                            <option value="20" selected>Normal (20ms)</option>
+                            <option value="10">Fast (10ms)</option>
+                            <option value="1">Ultra Fast (1ms)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button id="startBtn" class="btn btn-primary">Start Game</button>
+                    <button id="pauseBtn" class="btn btn-secondary" disabled>Pause</button>
+                    <button id="resetBtn" class="btn btn-secondary">Reset</button>
+                </div>
+            </div>
+
+            <div class="stats-panel">
+                <div class="stat-card">
+                    <h3>Score</h3>
+                    <div id="score" class="stat-value">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>High Score</h3>
+                    <div id="highScore" class="stat-value">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Moves</h3>
+                    <div id="moves" class="stat-value">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Status</h3>
+                    <div id="status" class="stat-value">Ready</div>
+                </div>
+
+                <div class="solver-info">
+                    <h3>About Current Solver</h3>
+                    <div id="solverDescription" class="description">
+                        <strong>Hamilton Cycle:</strong> Uses a pre-computed Hamiltonian path that visits every cell on the board exactly once. This guarantees the snake will never trap itself, achieving near-perfect scores.
+                    </div>
+                </div>
+
+                <div class="legend">
+                    <h3>Legend</h3>
+                    <div class="legend-item">
+                        <span class="color-box" style="background: #4CAF50;"></span>
+                        <span>Snake Head</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="color-box" style="background: #81C784;"></span>
+                        <span>Snake Body</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="color-box" style="background: #F44336;"></span>
+                        <span>Apple</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="color-box" style="background: #2196F3;"></span>
+                        <span>Planned Path</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>
+                Original Python implementation by <a href="https://github.com/gsurma/slitherin" target="_blank">Greg Surma</a>
+                | MILP solver and Web version by Claude
+            </p>
+            <p>
+                <a href="https://github.com/VonAlphaBisZulu/slitherin" target="_blank">View on GitHub</a>
+            </p>
+        </footer>
+    </div>
+
+    <script src="js/snake_game.js"></script>
+    <script src="js/solvers.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
