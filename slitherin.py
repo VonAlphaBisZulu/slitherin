@@ -8,7 +8,7 @@ from game.models.domain_specific.shortest_path_bfs_ai_solver import ShortestPath
 from game.models.domain_specific.shortest_path_dfs_ai_solver import ShortestPathDFSSolver
 from game.models.domain_specific.longest_path_ai_solver import LongestPathSolver
 from game.models.domain_specific.hamilton_ai_solver import HamiltonSolver
-from game.models.domain_specific.milp_ai_solver import MILPAISolver, MILPTrainer
+from game.models.domain_specific.milp_ai_solver import MILPAISolver, MILPBenchmark
 # Try to import TensorFlow-dependent solvers
 try:
     from game.models.domain_specific.dnn_ai_solver import DNNSolver, DNNTrainer
@@ -37,7 +37,7 @@ if TF_AVAILABLE:
                     DNNGeneticEvolutionSolver(),
                     DDQNSolver()])
 
-trainers = [MILPTrainer()]
+trainers = [MILPBenchmark()]
 
 if TF_AVAILABLE:
     trainers.extend([DNNTrainer(),

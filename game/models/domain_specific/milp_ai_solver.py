@@ -198,7 +198,9 @@ class MILPAISolver(BaseGameModel):
 
         except Exception as e:
             # MILP failed (timeout, infeasible, etc.)
-            print(f"MILP solver exception: {e}")
+            import traceback
+            print(f"MILP solver exception: {type(e).__name__}: {e}")
+            traceback.print_exc()
             return []
 
     def _fallback_move(self, environment):
@@ -279,15 +281,16 @@ class MILPAISolver(BaseGameModel):
         return base_stats + milp_stats
 
 
-class MILPTrainer(BaseGameModel):
+class MILPBenchmark(BaseGameModel):
     """
-    Trainer for MILP solver (mostly for benchmarking).
+    Benchmark runner for MILP solver.
 
-    Since MILP is not learned, this just runs many games to collect statistics.
+    Since MILP is deterministic optimization (not learned), this runs
+    multiple games to collect performance statistics.
     """
 
     def __init__(self, horizon=10, timeout=0.5, num_games=100):
-        BaseGameModel.__init__(self, "MILP Trainer", "milp_trainer", "milpt")
+        BaseGameModel.__init__(self, "MILP Benchmark", "milp_benchmark", "milpb")
         self.solver = MILPAISolver(horizon=horizon, timeout=timeout)
         self.num_games = num_games
 
