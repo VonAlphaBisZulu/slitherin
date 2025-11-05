@@ -1,11 +1,11 @@
 import pygame
 import sys
-from screen_objects.objects import SnakeScreenObject, FruitScreenObject, WallScreenObject
+from game.screen_objects.objects import SnakeScreenObject, FruitScreenObject, WallScreenObject
 from pygame.locals import *
-from helpers.point import Point
-from helpers.color import Color
-from helpers.constants import Constants
-from environment.environment import Environment
+from game.helpers.point import Point
+from game.helpers.color import Color
+from game.helpers.constants import Constants
+from game.environment.environment import Environment
 
 
 class Game:

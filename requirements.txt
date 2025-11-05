@@ -1,6 +1,7 @@
 # Python 3.10+ requirements
 numpy>=1.24.0
 tensorflow>=2.13.0  # Includes Keras
+tflearn>=0.5.0      # Deep learning library (legacy support)
 pygame>=2.5.0
 matplotlib>=3.7.0
 
