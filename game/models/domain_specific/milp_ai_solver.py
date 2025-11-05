@@ -28,13 +28,13 @@ class MILPAISolver(BaseGameModel):
     the snake never traps itself while optimizing for apple collection.
     """
 
-    def __init__(self, horizon=10, timeout=1.0, use_fallback=True):
+    def __init__(self, horizon=10, timeout=0.5, use_fallback=True):
         """
         Initialize MILP solver.
 
         Args:
             horizon: int - planning horizon (number of moves ahead)
-            timeout: float - SCIP solver timeout in seconds
+            timeout: float - SCIP solver timeout in seconds (default: 0.5s)
             use_fallback: bool - use BFS fallback if MILP fails
         """
         BaseGameModel.__init__(self, "MILP (SCIP)", "milp", "milp")
@@ -99,29 +99,35 @@ class MILPAISolver(BaseGameModel):
         apple_changed = (self.last_apple_pos is None or
                         self.last_apple_pos != apple_pos)
 
-        # If apple changed OR no valid cached path, recompute
-        if apple_changed or not self._has_valid_cached_path(head_pos):
-            # Solve MILP for new path
+        # If apple changed OR no valid cached path, try to recompute
+        should_recompute = apple_changed or not self._has_valid_cached_path(head_pos)
+
+        if should_recompute:
+            # Try to solve MILP for new path (with 0.5s timeout)
             path = self._solve_milp_for_path(head_pos, body_positions, apple_pos, environment)
 
             if path and len(path) >= 2:
-                # Cache the path
+                # Successfully computed new path - cache it
                 self.current_path = path
                 self.current_path_index = 0
                 self.last_apple_pos = apple_pos
                 self.milp_successes += 1
             else:
-                # MILP failed
+                # MILP failed/timed out
                 self.milp_failures += 1
-                self.current_path = []
 
-                if self.use_fallback:
-                    self.fallback_uses += 1
-                    return self._fallback_move(environment)
-                else:
-                    return environment.snake_action
+                # STRATEGY: Keep following old cached path if available
+                # Will retry MILP computation on next move
+                # This is more robust than immediately falling back to BFS
 
-        # Follow cached path
+                if apple_changed:
+                    # New apple, but MILP failed - update last_apple_pos anyway
+                    # so we keep retrying for this new apple
+                    self.last_apple_pos = apple_pos
+
+                # Don't clear current_path here! Keep it for retry strategy
+
+        # Follow cached path if available
         if self.current_path and self.current_path_index < len(self.current_path) - 1:
             self.path_reuses += 1
 
@@ -134,11 +140,12 @@ class MILPAISolver(BaseGameModel):
                 self.current_path_index += 1
                 return action
 
-        # Cached path invalid - try fallback
+        # No valid cached path - use fallback
         if self.use_fallback:
             self.fallback_uses += 1
             return self._fallback_move(environment)
         else:
+            # Last resort: continue current direction
             return environment.snake_action
 
     def _has_valid_cached_path(self, current_head):
@@ -279,10 +286,13 @@ class MILPTrainer(BaseGameModel):
     Since MILP is not learned, this just runs many games to collect statistics.
     """
 
-    def __init__(self, horizon=10, timeout=1.0, num_games=100):
+    def __init__(self, horizon=10, timeout=0.5, num_games=100):
         BaseGameModel.__init__(self, "MILP Trainer", "milp_trainer", "milpt")
         self.solver = MILPAISolver(horizon=horizon, timeout=timeout)
         self.num_games = num_games
+
+        # Track steps per apple for analysis
+        self.steps_per_apple = []  # List of (score, steps) tuples
 
     def move(self, environment):
         """
@@ -302,9 +312,11 @@ class MILPTrainer(BaseGameModel):
             # Reset environment
             environment.set_snake()
             environment.set_fruit()
+            self.solver.reset()  # Reset solver state
 
             score = 0
             steps = 0
+            steps_since_last_apple = 0
             max_steps = 1000  # Prevent infinite loops
 
             while steps < max_steps:
@@ -316,11 +328,15 @@ class MILPTrainer(BaseGameModel):
                     # Game over
                     break
 
+                steps += 1
+                steps_since_last_apple += 1
+
                 # Check if ate fruit
                 if environment.eat_fruit_if_possible():
                     score += 1
-
-                steps += 1
+                    # Record steps to get this apple
+                    self.steps_per_apple.append((score, steps_since_last_apple))
+                    steps_since_last_apple = 0
 
             scores.append(score)
 
@@ -342,3 +358,15 @@ class MILPTrainer(BaseGameModel):
         # Save scores
         for score in scores:
             self.log_score(score)
+
+        # Save steps per apple data for scatter plot
+        import csv
+        import os
+        steps_path = "scores/milp_steps_per_apple.csv"
+        os.makedirs("scores", exist_ok=True)
+        with open(steps_path, "w") as f:
+            writer = csv.writer(f)
+            writer.writerow(["score", "steps_to_apple"])
+            for score, steps in self.steps_per_apple:
+                writer.writerow([score, steps])
+        print(f"\nSaved steps-per-apple data to {steps_path}")

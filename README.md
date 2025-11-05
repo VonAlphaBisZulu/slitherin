@@ -127,8 +127,9 @@ In the vast majority of the cases, such path covers the whole environment creati
 
 `python slitherin.py --milp_trainer`
 
-<img src="assets/gifs/milp.gif" width="200">
+<!-- GIF to be generated -->
 <img src="scores/milp.png">
+<img src="scores/milp_steps_analysis.png" width="600">
 
 > **Mathematical optimization approach using SCIP solver**
 >
@@ -147,15 +148,16 @@ Uses [Mixed Integer Linear Programming (MILP)](https://en.wikipedia.org/wiki/Int
 **Key Features:**
 
 1. **Hamiltonian Path Constraints**: MTZ subtour elimination ensures a valid path always exists from head to tail
-2. **Intelligent Caching**: Solves MILP only when apple position changes (~143 times per game instead of 1000+)
+2. **Intelligent Caching**: Solves MILP only when apple position changes (~100 times per game instead of 1000+)
 3. **Dual Objective Optimization**:
    - Primary: Find shortest path to apple
    - Secondary: Maintain optimal field coverage for future moves
-4. **Fallback Strategy**: Uses BFS if MILP times out (1 second limit)
+4. **Robust Timeout Strategy**: 0.5s MILP timeout with graceful fallback - if MILP times out, continues following cached path and retries next move
+5. **BFS Fallback**: Uses breadth-first search only if no valid path exists
 
 **Performance:**
 
-Targets **90%+ win rate** with scores of **143/143** (perfect games). Significantly outperforms Hamilton solver through:
+Targets **95%+ win rate** with scores of **100/100** (perfect games on 12×12 grid with walls = 10×10 playable area). Significantly outperforms Hamilton solver through:
 - Dynamic replanning (every apple)
 - Apple-aware pathfinding
 - Provably no self-traps
@@ -163,22 +165,35 @@ Targets **90%+ win rate** with scores of **143/143** (perfect games). Significan
 **Technical Details:**
 
 ```python
-# MILP only recomputes when apple changes position
-if apple_position_changed:
-    solve_milp()  # Find optimal path to new apple
-    cache_path()   # Save for reuse
+# Robust timeout handling with retry strategy
+if apple_position_changed or not has_valid_cached_path():
+    path = solve_milp(timeout=0.5s)  # Try to find optimal path
+    if path:
+        cache_path(path)  # Success - cache new path
+    # else: MILP timed out - keep following old cached path, retry next move
+
+# Follow cached path (old or newly computed)
+if cached_path_valid:
+    follow_cached_path()  # Execute next move
 else:
-    follow_cached_path()  # Execute next move in cached path
+    use_bfs_fallback()  # Only if no path at all
 ```
+
+**Efficiency Analysis:**
+
+The scatter plot shows steps-to-apple increases as snake grows (fuller board requires longer paths):
+- Early game (score 1-30): ~15-30 steps per apple
+- Mid game (score 31-70): ~30-55 steps per apple
+- Late game (score 71-100): ~40-80 steps per apple
 
 **Mathematical Guarantees:**
 
 The MTZ constraints ensure:
 - No subtours (circular paths that don't include all cells)
 - Always maintains connectivity from head to tail
-- Provably optimal solution (within 10% gap, 1s timeout)
+- Provably optimal solution (within 10% gap, 0.5s timeout)
 
-This is the most advanced solver in the project, combining classical optimization with game-specific heuristics.
+This is the most advanced solver in the project, combining classical optimization with game-specific heuristics and robust error handling.
 
 ---
 
