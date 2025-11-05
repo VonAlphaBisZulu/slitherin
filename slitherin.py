@@ -8,6 +8,7 @@ from game.models.domain_specific.shortest_path_bfs_ai_solver import ShortestPath
 from game.models.domain_specific.shortest_path_dfs_ai_solver import ShortestPathDFSSolver
 from game.models.domain_specific.longest_path_ai_solver import LongestPathSolver
 from game.models.domain_specific.hamilton_ai_solver import HamiltonSolver
+from game.models.domain_specific.milp_ai_solver import MILPAISolver, MILPTrainer
 from game.models.domain_specific.dnn_ai_solver import DNNSolver, DNNTrainer
 from game.models.domain_specific.dnn_monte_carlo_ai_solver import DNNMonteCarloSolver
 from game.models.domain_specific.dnn_genetic_evolution_ai_solver import DNNGeneticEvolutionSolver, DNNGeneticEvolutionTrainer
@@ -21,6 +22,7 @@ solvers = [RandomSolver(),
            ShortestPathDFSSolver(),
            LongestPathSolver(),
            HamiltonSolver(),
+           MILPAISolver(),
            DNNSolver(),
            DNNMonteCarloSolver(),
            DNNGeneticEvolutionSolver(),
@@ -28,7 +30,8 @@ solvers = [RandomSolver(),
 
 trainers = [DNNTrainer(),
             DNNGeneticEvolutionTrainer(),
-            DDQNTrainer()]
+            DDQNTrainer(),
+            MILPTrainer()]
 
 game_models = solvers + trainers
 
