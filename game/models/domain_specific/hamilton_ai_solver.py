@@ -14,7 +14,7 @@ class HamiltonSolver(BaseGameModel):
     def move(self, environment):
         BaseGameModel.move(self, environment)
         if environment.is_in_fruitless_cycle():
-            print "Infinite fruitless cycle - game over at: " + str(environment.reward())
+            print(("Infinite fruitless cycle - game over at: " + str(environment.reward())))
             return environment.snake_action
 
         hamilton_path = self._hamilton_path(environment)

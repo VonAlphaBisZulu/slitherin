@@ -44,7 +44,7 @@ class DNNGeneticEvolutionTrainer(BaseGameModel):
         population = None
         while True:
             population_size = len(population) if population is not None else self.population_size
-            print "generation: " + str(self.generation) + ", population: " + str(population_size) + ", mutation_rate: " + str(self.mutation_rate)
+            print("generation: " + str(self.generation) + ", population: " + str(population_size) + ", mutation_rate: " + str(self.mutation_rate))
 
             # 1. Selection
             parents = self._strongest_parents(population)
@@ -98,17 +98,17 @@ class DNNGeneticEvolutionTrainer(BaseGameModel):
             chromosome = population[i]
             scores_for_chromosomes.append((chromosome, self._gameplay_for_chromosome(chromosome)))
             if i == len(population)-1:
-                print "\r"+"\033[K"+"\r",
+                print("\r"+"\033[K"+"\r", end=' ')
             else:
-                print "\r" + str(i + 1) + " out of " + str(len(population)),
+                print("\r" + str(i + 1) + " out of " + str(len(population)), end=' ')
 
         scores_for_chromosomes.sort(key=lambda x: x[1])
-        print "population: " + str(mean([x[1] for x in scores_for_chromosomes]))
+        print("population: " + str(mean([x[1] for x in scores_for_chromosomes])))
 
         top_performers = scores_for_chromosomes[-self.parents:]
         top_scores = [x[1] for x in top_performers]
-        print "top " + str(self.selection_rate) + ": " + "(min: " + str(min(top_scores)) + ", avg: " + str(mean(top_scores)) + ", max: " + str(max(top_scores)) + ")"
-        print ""
+        print("top " + str(self.selection_rate) + ": " + "(min: " + str(min(top_scores)) + ", avg: " + str(mean(top_scores)) + ", max: " + str(max(top_scores)) + ")")
+        print("")
         return top_performers
 
     def _mutation(self, base_offsprings):

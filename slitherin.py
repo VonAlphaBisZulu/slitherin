@@ -8,10 +8,18 @@ from game.models.domain_specific.shortest_path_bfs_ai_solver import ShortestPath
 from game.models.domain_specific.shortest_path_dfs_ai_solver import ShortestPathDFSSolver
 from game.models.domain_specific.longest_path_ai_solver import LongestPathSolver
 from game.models.domain_specific.hamilton_ai_solver import HamiltonSolver
-from game.models.domain_specific.dnn_ai_solver import DNNSolver, DNNTrainer
-from game.models.domain_specific.dnn_monte_carlo_ai_solver import DNNMonteCarloSolver
-from game.models.domain_specific.dnn_genetic_evolution_ai_solver import DNNGeneticEvolutionSolver, DNNGeneticEvolutionTrainer
-from game.models.general_purpose.ddqn_ai_solver import DDQNSolver, DDQNTrainer
+from game.models.domain_specific.milp_ai_solver import MILPAISolver, MILPBenchmark
+# Try to import TensorFlow-dependent solvers
+try:
+    from game.models.domain_specific.dnn_ai_solver import DNNSolver, DNNTrainer
+    from game.models.domain_specific.dnn_monte_carlo_ai_solver import DNNMonteCarloSolver
+    from game.models.domain_specific.dnn_genetic_evolution_ai_solver import DNNGeneticEvolutionSolver, DNNGeneticEvolutionTrainer
+    from game.models.general_purpose.ddqn_ai_solver import DDQNSolver, DDQNTrainer
+    TF_AVAILABLE = True
+except ImportError as e:
+    print(f"WARNING: TensorFlow solvers not available: {e}")
+    print("MILP and other non-TF solvers will still work.")
+    TF_AVAILABLE = False
 
 
 solvers = [RandomSolver(),
@@ -21,14 +29,20 @@ solvers = [RandomSolver(),
            ShortestPathDFSSolver(),
            LongestPathSolver(),
            HamiltonSolver(),
-           DNNSolver(),
-           DNNMonteCarloSolver(),
-           DNNGeneticEvolutionSolver(),
-           DDQNSolver()]
+           MILPAISolver()]
 
-trainers = [DNNTrainer(),
-            DNNGeneticEvolutionTrainer(),
-            DDQNTrainer()]
+if TF_AVAILABLE:
+    solvers.extend([DNNSolver(),
+                    DNNMonteCarloSolver(),
+                    DNNGeneticEvolutionSolver(),
+                    DDQNSolver()])
+
+trainers = [MILPBenchmark()]
+
+if TF_AVAILABLE:
+    trainers.extend([DNNTrainer(),
+                     DNNGeneticEvolutionTrainer(),
+                     DDQNTrainer()])
 
 game_models = solvers + trainers
 
