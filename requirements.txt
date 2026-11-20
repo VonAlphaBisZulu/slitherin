@@ -4,5 +4,5 @@ tensorflow>=2.13.0  # Includes Keras (DNN solvers migrated from TFLearn)
 pygame>=2.5.0
 matplotlib>=3.7.0
 
-# MILP solver support
-PySCIPOpt>=5.0.0  # SCIP optimization solver for MILP snake agent
+# Only needed for the MILP solver (--milp)
+PySCIPOpt>=5.0.0

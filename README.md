@@ -6,7 +6,7 @@
 
 AI research environment for the game of Snake written in **Python 3.10+** (migrated from Python 2.7). Part of the [OpenAI - Request For Research 2.0](https://blog.openai.com/requests-for-research-2/).
 
-> **🆕 New in 2025**: MILP-based solver using Mixed Integer Linear Programming with Hamiltonian path constraints. Targets 90%+ win rate with near-perfect gameplay!
+> **New**: the [Hamilton Cycle](#hamilton-cycle) solver wins every game and needs fewer than half the moves of the original Hamilton solver.
 
 ## 🌐 Play in Browser
 
@@ -36,7 +36,8 @@ Table of Contents
         * [Shortest Path DFS](#shortest-path-dfs)
         * [Longest path](#longest-path)
         * [Hamilton](#hamilton)
-        * [MILP (Mixed Integer Linear Programming)](#milp-mixed-integer-linear-programming) 🆕
+        * [Hamilton Cycle](#hamilton-cycle)
+        * [MILP](#milp)
         * [DNN](#dnn)
         * [DNN Monte Carlo](#dnn-monte-carlo)
      * [General purpose](#general-purpose)
@@ -44,6 +45,7 @@ Table of Contents
         * [Random](#random)
         * [Monte Carlo](#monte-carlo)
         * [DNN Genetic Evolution](#dnn-genetic-evolution)
+  * [Benchmark](#benchmark)
   * [Work in progress](#work-in-progress)
 
 ## Usage
@@ -68,7 +70,7 @@ No installation required! Watch AI solvers play Snake with interactive controls.
 
 ## Modes
 All mode previews contain <span style="color:green">current score</span> **Mode Name (min/avg/max)**.
-All modes are benchmarked on a 12x12 grid.
+All modes are benchmarked on a 12x12 grid. The outer ring of tiles is wall, so the snake has 10x10 = 100 tiles and the maximum score is 100.
 
 ### Domain specific
 > Algorithms are using domain specific data like snake's position, direction, neighbors etc.
@@ -122,78 +124,35 @@ In the vast majority of the cases, such path covers the whole environment creati
 
 ---
 
-#### MILP (Mixed Integer Linear Programming)
+#### Hamilton Cycle
+`python slitherin.py --hamilton_cycle`
+
+<img src="assets/gifs/hamilton_cycle.gif" width="200">
+<img src="scores/benchmark_moves_per_apple.png" width="600">
+
+The snake always lies along a [Hamiltonian cycle](https://en.wikipedia.org/wiki/Hamiltonian_path) of the board: a closed loop through every free tile. The head is one point of the loop and the body is the stretch right behind it. The snake always steps to the next tile of the loop, so the tiles it reaches last are the ones its own body leaves, in the order the body leaves them. It can never trap itself, and it wins every game.
+
+Which loop it follows is a free choice, and that choice is what makes it fast. Before every move a local search reshapes the loop so that the apple comes as early on it as possible. When a new apple appears, the search is repeated from 60 randomly shaken loops and the best result is kept; this is where most of the thinking time goes (about 5 seconds per game). One reshaping step cuts the loop at one grid square, which splits off a second loop, and joins the two again at another square. The stretch of loop the snake occupies is never cut, so every reshaped loop is as safe as the one before.
+
+Measured over 100 games on the default board (`python benchmark.py hamilton hamilton_cycle --games 100 --seed 1`):
+
+| Solver | Games won | Mean moves to win |
+|---|---|---|
+| Hamilton | 78 of 100 | 2568 |
+| Hamilton Cycle | 100 of 100 | 1092 |
+
+The plot shows where the moves go. Early on, a short snake on a fixed loop has to travel half the board for each apple; reshaping the loop cuts that to about 11 moves. The gap closes as the board fills up.
+
+---
+
+#### MILP
 `python slitherin.py --milp`
 
-`python slitherin.py --milp_trainer`
+Needs [SCIP](https://www.scipopt.org) (`pip install pyscipopt`).
 
-<!-- GIF to be generated -->
-<img src="scores/milp.png">
-<img src="scores/milp_steps_analysis.png" width="600">
+Plays like the Hamilton Cycle solver and is just as safe. In addition, each time a new apple appears, the question "which loop through the whole board, containing the snake, reaches the apple soonest?" is handed to SCIP as a [mixed integer program](https://en.wikipedia.org/wiki/Integer_programming) (one 0/1 variable per possible step between neighbouring tiles, [Miller-Tucker-Zemlin](https://en.wikipedia.org/wiki/Travelling_salesman_problem#Miller%E2%80%93Tucker%E2%80%93Zemlin_formulation) constraints to force a single loop). SCIP starts from the loop the local search found and gets one second per apple; if it finds nothing better in that time, the snake simply keeps the loop it has. The model is in `game/models/milp/model_builder.py`.
 
-> **Mathematical optimization approach using SCIP solver**
->
-> **Model Structure:**
-> * **Decision variables**: x[i,j,t] = 1 if snake head at position (i,j) at time t
-> * **MTZ auxiliary variables**: u[i,j] = visit order (for Hamiltonian path constraints)
-> * **Edge variables**: e[i,j,k,l,t] = 1 if moving from (i,j) to (k,l) at time t
-> * **Objective**: α × distance\_to\_apple + β × max\_distance\_to\_remaining\_cells
->   * Primary (α=100): Minimize distance to apple
->   * Secondary (β=1): After eating apple, minimize maximum distance to any unvisited cell
-
-**Approach:**
-
-Uses [Mixed Integer Linear Programming (MILP)](https://en.wikipedia.org/wiki/Integer_programming) with [Miller-Tucker-Zemlin (MTZ) constraints](https://en.wikipedia.org/wiki/Travelling_salesman_problem#Integer_linear_programming_formulation) to ensure Hamiltonian path property. This mathematically **guarantees** the snake never traps itself.
-
-**Key Features:**
-
-1. **Hamiltonian Path Constraints**: MTZ subtour elimination ensures a valid path always exists from head to tail
-2. **Intelligent Caching**: Solves MILP only when apple position changes (~100 times per game instead of 1000+)
-3. **Dual Objective Optimization**:
-   - Primary: Find shortest path to apple
-   - Secondary: Maintain optimal field coverage for future moves
-4. **Robust Timeout Strategy**: 0.5s MILP timeout with graceful fallback - if MILP times out, continues following cached path and retries next move
-5. **BFS Fallback**: Uses breadth-first search only if no valid path exists
-
-**Performance:**
-
-Targets **95%+ win rate** with scores of **100/100** (perfect games on 12×12 grid with walls = 10×10 playable area). Significantly outperforms Hamilton solver through:
-- Dynamic replanning (every apple)
-- Apple-aware pathfinding
-- Provably no self-traps
-
-**Technical Details:**
-
-```python
-# Robust timeout handling with retry strategy
-if apple_position_changed or not has_valid_cached_path():
-    path = solve_milp(timeout=0.5s)  # Try to find optimal path
-    if path:
-        cache_path(path)  # Success - cache new path
-    # else: MILP timed out - keep following old cached path, retry next move
-
-# Follow cached path (old or newly computed)
-if cached_path_valid:
-    follow_cached_path()  # Execute next move
-else:
-    use_bfs_fallback()  # Only if no path at all
-```
-
-**Efficiency Analysis:**
-
-The scatter plot shows steps-to-apple increases as snake grows (fuller board requires longer paths):
-- Early game (score 1-30): ~15-30 steps per apple
-- Mid game (score 31-70): ~30-55 steps per apple
-- Late game (score 71-100): ~40-80 steps per apple
-
-**Mathematical Guarantees:**
-
-The MTZ constraints ensure:
-- No subtours (circular paths that don't include all cells)
-- Always maintains connectivity from head to tail
-- Provably optimal solution (within 10% gap, 0.5s timeout)
-
-This is the most advanced solver in the project, combining classical optimization with game-specific heuristics and robust error handling.
+In four test games SCIP almost never found a better loop than the local search had: no improvement in 187 apples with one second each, two improvements in 190 apples with three seconds each. For about 40% of the apples (one second) to 55% (three seconds) it proved that the local search's loop was already the best one. So this solver is mainly a check on the local search, and it is much slower: about a minute per game.
 
 ---
 
@@ -287,28 +246,23 @@ Initial population starts with random weights. Then in the selection phase, the 
 Performance is relatively satisfactory. Snake correctly learned that taking the shortest path to the fruit isn't a good solution in the late stages, but ultimately still gets trapped within its own body.
 
 
-## Recent Updates (2025)
+## Benchmark
 
-### Python 3 Migration ✅
-- Fully migrated from Python 2.7 to Python 3.10+
-- Updated dependencies (TensorFlow 2.x, modern NumPy, Pygame 2.x)
-- All 11 original solvers working + new MILP solver
-- See `PYTHON3_MIGRATION.md` for details
+`benchmark.py` plays full games without a window and prints what happened:
 
-### MILP Solver ✅
-- New solver using Mixed Integer Linear Programming
-- MTZ Hamiltonian path constraints for mathematically proven no-self-trap gameplay
-- Targets 90%+ win rate with 143/143 perfect scores
-- See `SOLVER_ANALYSIS.md` and `IMPLEMENTATION_PLAN.md` for technical details
+```
+python benchmark.py hamilton_cycle --games 20
+python benchmark.py shortest_path_bfs hamilton hamilton_cycle --games 100 --seed 1 --save
+```
 
-### Work in Progress 🚧
-- **Web Embedding**: Browser-based gameplay with canvas visualization
-- **GitHub Pages Hosting**: Play snake AI solvers directly in your browser
-- **Performance Benchmarking**: Comprehensive comparisons of all 12 solvers
-- Multiplayer (multi-agent) version
+A game's score is the length of the snake. The default board is 12x12 tiles including the walls, which leaves 10x10 = 100 free tiles, so **100 is the maximum score** and a game is won when the snake fills the board. With `--save` the results are written to `scores/benchmark_<solver>.csv` (one row per game) and `scores/benchmark_<solver>_apples.csv` (moves spent on each apple).
 
-Stay tuned!
+`visualize.py` turns those files into the moves-per-apple plot and records a game as a GIF.
 
+## Work in progress
+
+- How close the Hamilton Cycle solver is to the best possible play is not known yet. Always taking the shortest path to the apple would cost roughly 640 moves per game on this board, but that plan gets the snake trapped; the safe solver needs about 1090.
+- The web version (`docs/`) has its own JavaScript solvers and does not include the Hamilton Cycle or MILP solver.
 
 ## Authors
 
@@ -317,8 +271,7 @@ Stay tuned!
 [**PORTFOLIO**](https://gsurma.github.io) | [**GITHUB**](https://github.com/gsurma) | [**BLOG**](https://medium.com/@gsurma)
 
 **2025 Contributions:**
-- Python 3 migration and modernization
-- MILP solver implementation with Hamiltonian path constraints
-- Web embedding architecture (in progress)
-- Comprehensive documentation and analysis
+- Python 3 migration
+- Hamilton Cycle and MILP solvers, headless benchmark
+- Web version
 

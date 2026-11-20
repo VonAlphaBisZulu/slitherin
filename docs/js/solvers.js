@@ -320,11 +320,11 @@ class HamiltonSolver extends Solver {
     }
 }
 
-// MILP solver (simplified JavaScript version)
+// A* with a tail-reachability check (a heuristic; not the Python MILP solver)
 class MILPSolver extends Solver {
     constructor() {
-        super('MILP (Mixed Integer Linear Programming)',
-            'Uses Mixed Integer Linear Programming with Miller-Tucker-Zemlin (MTZ) constraints to ensure Hamiltonian path property. Mathematically guarantees the snake never traps itself by solving an optimization problem at each apple consumption. Caches paths for efficiency (~143 MILP solves per game vs 1000+ moves).');
+        super('A* with tail check',
+            'Takes the shortest path to the apple (A*), but only if the head can still reach the tail afterwards. A heuristic: it lasts longer than plain BFS but can still trap itself.');
         this.cachedPath = null;
         this.lastApplePos = null;
         this.pathIndex = 0;
@@ -494,5 +494,5 @@ const SOLVER_DESCRIPTIONS = {
     dfs: 'Uses depth-first search to find a path to the apple. Less optimal than BFS. Typically scores 15-30.',
     longest: 'Tries to find the longest path to the apple, maximizing space coverage. Scores 40-80.',
     hamilton: 'Uses a pre-computed Hamiltonian path that visits every cell on the board exactly once. This guarantees the snake will never trap itself, achieving near-perfect scores of 100+.',
-    milp: 'Uses Mixed Integer Linear Programming with Miller-Tucker-Zemlin (MTZ) constraints to ensure Hamiltonian path property. Mathematically guarantees the snake never traps itself. Targets 90%+ win rate with scores of 143/143 (perfect games).'
+    milp: 'Takes the shortest path to the apple (A*), but only if the head can still reach the tail afterwards. A heuristic: it lasts longer than plain BFS but can still trap itself.'
 };

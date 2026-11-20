@@ -225,16 +225,6 @@ python slitherin.py --longest_path --games 100
 
 ## Next Steps
 
-### Phase 2: MILP Solver Implementation
-
-Now that Python 3 migration is complete, ready to implement MILP-based snake solver:
-
-1. ✅ Python 3 migration complete
-2. 🔜 Install PySCIPOpt: `pip install pyscipopt`
-3. 🔜 Implement MILP solver (see `IMPLEMENTATION_PLAN.md`)
-4. 🔜 Test MILP vs Hamilton performance
-5. 🔜 Web embedding (Phase 3)
-
 ### Future: Migrate DNN Models to Keras
 
 **Goal**: Remove TFLearn dependency entirely
