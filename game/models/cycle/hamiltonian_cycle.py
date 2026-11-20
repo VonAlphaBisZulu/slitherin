@@ -18,9 +18,10 @@ it eats. Following the cycle can therefore never kill the snake, and any cycle
 that respects the invariant is as safe as any other.
 
 That leaves one free choice: WHICH cycle. `improve` searches for one on which
-the apple comes early.
+the apple comes early; `improve_with_restarts` searches harder.
 """
 
+import random
 import time
 
 
@@ -160,3 +161,45 @@ def improve(order, body_len, apple, w, h, time_limit=None):
         order = _apply_move(order, *move[1:])
         if deadline is not None and time.time() > deadline:
             return order
+
+
+def _random_move(order, pos, body_len, w, h, rng):
+    """A random cut-and-re-insert move (see _best_move), or None if there is none."""
+    last_free = len(order) - body_len
+    pairs = _parallel_pairs(order, pos, w, h)
+    moves = []
+    for i, j in pairs:
+        if j > last_free:
+            continue
+        for k1, k2 in pairs:
+            in1, in2 = i < k1 < j, i < k2 < j
+            if in1 == in2:
+                continue
+            ka, kb = (k2, k1) if in1 else (k1, k2)
+            if not (i <= ka <= j or ka > last_free):
+                moves.append((i, j, ka, kb))
+    return rng.choice(moves) if moves else None
+
+
+def improve_with_restarts(order, body_len, apple, w, h, restarts=60, kicks=2, rng=random):
+    """
+    `improve`, then try to escape its dead end: shake the best cycle with a few
+    random moves, improve again, and keep the result if the apple comes earlier.
+    Slower than `improve` and a little better; just as safe.
+    """
+    best = improve(order, body_len, apple, w, h)
+    best_pos = best.index(apple)
+    for _ in range(restarts):
+        if best_pos <= 1:
+            break
+        candidate = best
+        for _ in range(kicks):
+            pos = {c: k for k, c in enumerate(candidate)}
+            move = _random_move(candidate, pos, body_len, w, h, rng)
+            if move is None:
+                break
+            candidate = _apply_move(candidate, *move)
+        candidate = improve(candidate, body_len, apple, w, h)
+        if candidate.index(apple) < best_pos:
+            best, best_pos = candidate, candidate.index(apple)
+    return best

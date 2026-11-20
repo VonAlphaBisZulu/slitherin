@@ -5,25 +5,34 @@ The snake always lies along a Hamiltonian cycle of the board (see
 game/models/cycle/hamiltonian_cycle.py for the exact invariant) and always
 steps to the next cell of that cycle, so it cannot trap itself and wins every
 game. Before each step the cycle is reshaped by a local search so that the
-apple comes as early on it as possible.
+apple comes as early on it as possible; when a new apple appears the search is
+repeated from many randomly shaken cycles (`restarts`), which costs most of the
+thinking time (about 5 s per game on the default board) and saves some moves.
 """
+
+import random
 
 from game.helpers.point import Point
 from game.models.base_game_model import BaseGameModel
-from game.models.cycle.hamiltonian_cycle import zigzag_cycle, rotate_to, improve
+from game.models.cycle.hamiltonian_cycle import (zigzag_cycle, rotate_to, improve,
+                                                 improve_with_restarts)
 
 
 class HamiltonCycleSolver(BaseGameModel):
 
     def __init__(self, long_name="Hamilton Cycle", short_name="hamilton_cycle", abbreviation="hc",
-                 time_limit=0.05):
+                 time_limit=0.05, restarts=60):
         BaseGameModel.__init__(self, long_name, short_name, abbreviation)
-        self.time_limit = time_limit  # seconds of search per move
+        self.time_limit = time_limit  # seconds of search per ordinary move
+        self.restarts = restarts      # extra searches for each new apple (0 = fast)
+        self.rng = random.Random(0)   # own generator: does not disturb the game's
+        self.last_apple = None
         self.order = None
         self.size = None
 
     def reset(self):
         self.order = None
+        self.last_apple = None
 
     def move(self, environment):
         BaseGameModel.move(self, environment)
@@ -45,6 +54,9 @@ class HamiltonCycleSolver(BaseGameModel):
         return [Point(x + 1, y + 1) for x, y in self.order or []]
 
     def _improve(self, order, body, apple, w, h):
+        if apple != self.last_apple and self.restarts:
+            self.last_apple = apple
+            return improve_with_restarts(order, len(body), apple, w, h, self.restarts, rng=self.rng)
         return improve(order, len(body), apple, w, h, self.time_limit)
 
     def _synced_cycle(self, body, w, h):

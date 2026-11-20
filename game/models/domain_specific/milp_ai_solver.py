@@ -9,7 +9,6 @@ time; the cycle it started from is then kept, so a time limit costs moves but
 never safety.
 """
 
-from game.models.cycle.hamiltonian_cycle import improve
 from game.models.domain_specific.hamilton_cycle_ai_solver import HamiltonCycleSolver
 from game.models.milp.model_builder import solve_best_cycle
 
@@ -29,9 +28,9 @@ class MILPAISolver(HamiltonCycleSolver):
         self.improved = 0         # ... that beat the local search
 
     def _improve(self, order, body, apple, w, h):
-        order = improve(order, len(body), apple, w, h, self.time_limit)
-        if (apple, len(body)) != self.solved_apple and order[1] != apple:
-            self.solved_apple = (apple, len(body))
+        order = HamiltonCycleSolver._improve(self, order, body, apple, w, h)
+        if apple != self.solved_apple and order[1] != apple:
+            self.solved_apple = apple
             before = order.index(apple)
             order, optimal = solve_best_cycle(order, len(body), apple, w, h, self.milp_time_limit)
             self.solves += 1
