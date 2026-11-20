@@ -132,14 +132,14 @@ In the vast majority of the cases, such path covers the whole environment creati
 
 The snake always lies along a [Hamiltonian cycle](https://en.wikipedia.org/wiki/Hamiltonian_path) of the board: a closed loop through every free tile. The head is one point of the loop and the body is the stretch right behind it. The snake always steps to the next tile of the loop, so the tiles it reaches last are the ones its own body leaves, in the order the body leaves them. It can never trap itself, and it wins every game.
 
-Which loop it follows is a free choice, and that choice is what makes it fast. Before every move a local search reshapes the loop so that the apple comes as early on it as possible. One reshaping step cuts the loop at one grid square, which splits off a second loop, and joins the two again at another square. The stretch of loop the snake occupies is never cut, so every reshaped loop is as safe as the one before.
+Which loop it follows is a free choice, and that choice is what makes it fast. Before every move a local search reshapes the loop so that the apple comes as early on it as possible. When a new apple appears, the search is repeated from 60 randomly shaken loops and the best result is kept; this is where most of the thinking time goes (about 5 seconds per game). One reshaping step cuts the loop at one grid square, which splits off a second loop, and joins the two again at another square. The stretch of loop the snake occupies is never cut, so every reshaped loop is as safe as the one before.
 
 Measured over 100 games on the default board (`python benchmark.py hamilton hamilton_cycle --games 100 --seed 1`):
 
 | Solver | Games won | Mean moves to win |
 |---|---|---|
 | Hamilton | 78 of 100 | 2568 |
-| Hamilton Cycle | 100 of 100 | 1128 |
+| Hamilton Cycle | 100 of 100 | 1092 |
 
 The plot shows where the moves go. Early on, a short snake on a fixed loop has to travel half the board for each apple; reshaping the loop cuts that to about 11 moves. The gap closes as the board fills up.
 
@@ -151,6 +151,8 @@ The plot shows where the moves go. Early on, a short snake on a fixed loop has t
 Needs [SCIP](https://www.scipopt.org) (`pip install pyscipopt`).
 
 Plays like the Hamilton Cycle solver and is just as safe. In addition, each time a new apple appears, the question "which loop through the whole board, containing the snake, reaches the apple soonest?" is handed to SCIP as a [mixed integer program](https://en.wikipedia.org/wiki/Integer_programming) (one 0/1 variable per possible step between neighbouring tiles, [Miller-Tucker-Zemlin](https://en.wikipedia.org/wiki/Travelling_salesman_problem#Miller%E2%80%93Tucker%E2%80%93Zemlin_formulation) constraints to force a single loop). SCIP starts from the loop the local search found and gets one second per apple; if it finds nothing better in that time, the snake simply keeps the loop it has. The model is in `game/models/milp/model_builder.py`.
+
+In four test games SCIP almost never found a better loop than the local search had: no improvement in 187 apples with one second each, two improvements in 190 apples with three seconds each. For about 40% of the apples (one second) to 55% (three seconds) it proved that the local search's loop was already the best one. So this solver is mainly a check on the local search, and it is much slower: about a minute per game.
 
 ---
 
@@ -259,7 +261,7 @@ A game's score is the length of the snake. The default board is 12x12 tiles incl
 
 ## Work in progress
 
-- How close the Hamilton Cycle solver is to the best possible play is not known yet. Always taking the shortest path to the apple would cost roughly 640 moves per game on this board, but that plan gets the snake trapped; the safe solver needs about 1130.
+- How close the Hamilton Cycle solver is to the best possible play is not known yet. Always taking the shortest path to the apple would cost roughly 640 moves per game on this board, but that plan gets the snake trapped; the safe solver needs about 1090.
 - The web version (`docs/`) has its own JavaScript solvers and does not include the Hamilton Cycle or MILP solver.
 
 ## Authors
