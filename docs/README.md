@@ -15,7 +15,7 @@ Visit the GitHub Pages site to play: [https://vonalphabiszulu.github.io/slitheri
   - DFS Shortest Path
   - Longest Path
   - Hamilton Cycle
-  - **MILP (Mixed Integer Linear Programming)** - Advanced solver with mathematical guarantees
+  - A* with tail check (a heuristic)
   - Random (baseline)
 - **Real-time Visualization**: See the AI's planned path as it plays
 - **Adjustable Speed**: Control game speed from slow to ultra-fast
@@ -66,10 +66,9 @@ Each solver implements the `Solver` interface with a `getAction(game)` method:
 
 - **BFS/DFS**: Pathfinding algorithms for shortest routes to apples
 - **Hamilton Cycle**: Pre-computed Hamiltonian path visiting every cell
-- **MILP**: Simplified JavaScript version of the Python MILP solver
-  - Uses A* with Hamiltonian property verification
-  - Checks that planned paths maintain connectivity to tail
-  - Full MILP would require WebAssembly port of SCIP solver
+- **A\* with tail check**: shortest path to the apple, taken only if the head can still reach the tail afterwards. A heuristic that can still trap itself.
+
+The Python-only solvers (Hamilton Cycle with cycle reshaping, MILP) are not part of the web version.
 
 ### Renderer (`renderer.js`)
 
@@ -88,25 +87,6 @@ The `SnakeApp` class ties everything together:
 - Solver switching
 - Speed control
 - High score persistence (localStorage)
-
-## Technical Notes
-
-### Why JavaScript MILP is Simplified
-
-The full Python MILP solver uses PySCIPOpt (C++ SCIP solver with Python bindings) to solve complex mixed-integer linear programming problems. For the web version:
-
-**Option 1 (Current)**: Simplified heuristic that mimics MILP behavior
-- Uses A* pathfinding with Hamiltonian property checks
-- Verifies paths maintain connectivity to tail
-- Much faster but less optimal than true MILP
-
-**Option 2 (Future)**: WebAssembly SCIP port
-- Compile SCIP to WebAssembly
-- Create JavaScript bindings
-- Run true MILP in browser
-- Requires significant build complexity
-
-The current implementation provides a good approximation of MILP behavior while keeping the codebase simple and portable.
 
 ## GitHub Pages Deployment
 
@@ -132,7 +112,7 @@ The site will be available at: `https://<username>.github.io/<repository>/`
 Improvements welcome! Key areas:
 - Additional AI solvers (Genetic algorithms, RL, etc.)
 - Better mobile controls
-- WebAssembly MILP implementation
+- Port of the Python Hamilton Cycle solver (cycle reshaping)
 - Multiplayer mode
 - Leaderboard system
 
@@ -143,5 +123,5 @@ See main repository LICENSE file.
 ## Credits
 
 - Original Python implementation: [Greg Surma](https://github.com/gsurma/slitherin)
-- MILP solver and web version: Claude
+- Web version: Claude
 - Built with vanilla JavaScript (no frameworks!)

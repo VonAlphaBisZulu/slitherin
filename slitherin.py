@@ -8,7 +8,15 @@ from game.models.domain_specific.shortest_path_bfs_ai_solver import ShortestPath
 from game.models.domain_specific.shortest_path_dfs_ai_solver import ShortestPathDFSSolver
 from game.models.domain_specific.longest_path_ai_solver import LongestPathSolver
 from game.models.domain_specific.hamilton_ai_solver import HamiltonSolver
-from game.models.domain_specific.milp_ai_solver import MILPAISolver, MILPBenchmark
+from game.models.domain_specific.hamilton_cycle_ai_solver import HamiltonCycleSolver
+# SCIP is optional: without it only the MILP solver is missing
+try:
+    from game.models.domain_specific.milp_ai_solver import MILPAISolver
+    SCIP_AVAILABLE = True
+except ImportError as e:
+    print(f"WARNING: MILP solver not available: {e}")
+    SCIP_AVAILABLE = False
+
 # Try to import TensorFlow-dependent solvers
 try:
     from game.models.domain_specific.dnn_ai_solver import DNNSolver, DNNTrainer
@@ -18,7 +26,7 @@ try:
     TF_AVAILABLE = True
 except ImportError as e:
     print(f"WARNING: TensorFlow solvers not available: {e}")
-    print("MILP and other non-TF solvers will still work.")
+    print("All other solvers will still work.")
     TF_AVAILABLE = False
 
 
@@ -29,7 +37,10 @@ solvers = [RandomSolver(),
            ShortestPathDFSSolver(),
            LongestPathSolver(),
            HamiltonSolver(),
-           MILPAISolver()]
+           HamiltonCycleSolver()]
+
+if SCIP_AVAILABLE:
+    solvers.append(MILPAISolver())
 
 if TF_AVAILABLE:
     solvers.extend([DNNSolver(),
@@ -37,7 +48,7 @@ if TF_AVAILABLE:
                     DNNGeneticEvolutionSolver(),
                     DDQNSolver()])
 
-trainers = [MILPBenchmark()]
+trainers = []
 
 if TF_AVAILABLE:
     trainers.extend([DNNTrainer(),
