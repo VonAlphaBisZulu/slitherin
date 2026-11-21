@@ -42,7 +42,7 @@ class DeepNeuralNetModel(metaclass=Singleton):
 
         inputs = Input(shape=(Constants.MODEL_FEATURE_COUNT, 1))
         x = Flatten()(inputs)  # Flatten for Dense layers
-        self.hidden_layer = Dense(self.hidden_node_neurons, activation='relu')(x)
+        self.hidden_layer = Dense(self.hidden_node_neurons, activation='relu6')(x)
         outputs = Dense(1, activation='linear')(self.hidden_layer)
 
         self.model = Model(inputs=inputs, outputs=outputs)
@@ -51,13 +51,24 @@ class DeepNeuralNetModel(metaclass=Singleton):
             loss='mean_squared_error'
         )
 
-        # Try to load existing model if it exists
+        # Weights saved by this (Keras) version, else the original TFLearn checkpoint
         h5_path = self.dnn_model_file_name.replace('.tf', '.h5')
         if os.path.isfile(h5_path):
             try:
                 self.model.load_weights(h5_path)
             except Exception as e:
                 print(f"Could not load model weights from {h5_path}: {e}")
+        elif os.path.isfile(self.dnn_model_file_name + ".index"):
+            self._load_tflearn_checkpoint(self.dnn_model_file_name)
+
+    def _load_tflearn_checkpoint(self, path):
+        """Copy the two layers of a checkpoint written by the TFLearn version."""
+        import tensorflow as tf
+        reader = tf.train.load_checkpoint(path)
+        self.model.layers[2].set_weights([reader.get_tensor("FullyConnected/W"),
+                                          reader.get_tensor("FullyConnected/b")])
+        self.model.layers[3].set_weights([reader.get_tensor("FullyConnected_1/W"),
+                                          reader.get_tensor("FullyConnected_1/b")])
 
     def save(self):
         """Save model weights"""

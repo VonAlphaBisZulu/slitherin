@@ -93,14 +93,13 @@ class BaseGameModel:
 
 
     def _predict(self, environment, model):
-        predictions = []
         actions = [Action.left_neighbor(environment.snake_action), environment.snake_action,
                    Action.right_neighbor(environment.snake_action)]
-        for action in actions:
-            observation_for_prediction = environment.observation(action)
-            predictions.append(
-                model.model.predict(np.array(observation_for_prediction).reshape(-1, Constants.MODEL_FEATURE_COUNT, 1))
-            )
+        # The network is tiny (5 -> 125 relu6 -> 1), so evaluate it directly with
+        # numpy for the three candidate moves; a Keras call per move is far slower.
+        observations = np.array([environment.observation(action) for action in actions], dtype=np.float32)
+        w1, b1, w2, b2 = model.model.get_weights()
+        predictions = np.clip(observations @ w1 + b1, 0, 6) @ w2 + b2
         best_prediction_index = np.argmax(np.array(predictions))
         return actions[best_prediction_index]
 

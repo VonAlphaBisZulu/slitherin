@@ -36,6 +36,10 @@ SOLVERS = {
     "hamilton": ("game.models.domain_specific.hamilton_ai_solver", "HamiltonSolver"),
     "hamilton_cycle": ("game.models.domain_specific.hamilton_cycle_ai_solver", "HamiltonCycleSolver"),
     "milp": ("game.models.domain_specific.milp_ai_solver", "MILPAISolver"),
+    "deep_neural_net": ("game.models.domain_specific.dnn_ai_solver", "DNNSolver"),
+    "deep_neural_net_monte_carlo": ("game.models.domain_specific.dnn_monte_carlo_ai_solver", "DNNMonteCarloSolver"),
+    "deep_neural_net_genetic_evolution": ("game.models.domain_specific.dnn_genetic_evolution_ai_solver",
+                                          "DNNGeneticEvolutionSolver"),
 }
 
 
